@@ -26,6 +26,9 @@ pygame.display.set_caption("Tron")
 
 Q = {}
 policy = {}
+'''for state in [(a, b, c, d, e, f, g, h, dir, opp) for a in range(2) for b in range(2) for c in range(2)
+              for d in range(2) for e in range(2) for f in range(2) for g in range(2) for h in range(2)
+              for dir in ["up", "down", "left", "right"] for opp in range(9)]:'''
 for state in [(row, column, row2, column2) for row in range(size3) for column in range(size3)
               for row2 in range(size3) for column2 in range(size3)]:
     Q[state] = {}
@@ -137,7 +140,7 @@ for i in range(2):
             if p2direction != "up":
                 p2direction = "down"
             if p2direction != "right":
-                p2direction = "left"'''            
+                p2direction = "left"'''
         p2direction = policy[(int(p1x/20)-1, int(p1y/20)-1, int(p2x/20)-1, int(p2y/20)-1)]
 
         if p2alive:
@@ -215,7 +218,7 @@ for i in range(2):
             print(p1score)
             print(p2score)
             reward = reward + 5
-            print("RRREWA: " + str(reward))
+            print("Reward: " + str(reward))
             done = True
 
         clock.tick(8)
