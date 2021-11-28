@@ -28,11 +28,11 @@ YELLOW = (255, 255, 0)
 
 # Window settings
 
-SIZE2 = 160
-SIZE3 = 8
+SIZE2 = 240
+SIZE3 = 12
 MOVEMENTSPEED = 20
 
-screen = pygame.display.set_mode([160,160])
+screen = pygame.display.set_mode([SIZE2,SIZE2])
 pygame.display.set_caption("Tron: CISC 474")
 
 # Policy stuff?
@@ -94,7 +94,7 @@ def run_loop(iters: int):
                         for i in range(0,SIZE2,20):
                             pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
                             pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
-                        
+
                         p1 = Agent(SIZE2/4, SIZE2/4, 'e', BLUE)
                         p2 = Agent((SIZE2*3)/4, (SIZE2*3)/4, 'w', YELLOW)
                         grid = [[False for _ in range(int(SIZE2/20))] for _ in range(int(SIZE2/20))]
@@ -105,6 +105,14 @@ def run_loop(iters: int):
 
             # TODO: Alex add your policy stuff here, I didn't copy it over because I'm not deleting main.py
             # TODO: Copy over anything you need here and leave both files.
+            p2.dir = p2.epsilonGreedy(p1.x, p1.y, p1.dir, SIZE2, grid)
+
+            '''
+            TODO - List
+            
+            Update Q value of current state and action and then immediately afterwards update policy of state
+            Rewards
+            '''
 
             # Redraws the players based on their movement
             if p1.alive or p2.alive:
