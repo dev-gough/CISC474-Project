@@ -13,18 +13,18 @@ class Agent:
         self.score = 0
         self.alive = True
         self.colour = colour
-        self.policy = self.initializePolicy()
-        self.Q = self.initializeStateAction()
+        #self.policy = self.initializePolicy()
+        #self.Q = self.initializeStateAction()
 
-    def initializePolicy(self):
+    '''def initializePolicy(self):
         policy = {}
         for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b in range(2) for c in range(2)
                       for d in range(2) for e in range(2) for f in range(2) for g in range(2) for h in range(2)
                       for direction in ["w", "e", "n", "s"] for opp in range(9)]:
             policy[state] = random.choice(["w", "e", "n", "s"])
-        return policy
+        return policy'''
 
-    def initializeStateAction(self):
+    '''def initializeStateAction(self):
         Q = {}
         for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b in range(2) for c in range(2)
                       for d in range(2) for e in range(2) for f in range(2) for g in range(2) for h in range(2)
@@ -32,13 +32,35 @@ class Agent:
             Q[state] = {}
             for action in ["w", "e", "n", "s"]:
                 Q[state][action] = 0
-        return Q
+        return Q'''
 
-    def epsilonGreedy(self, p1x, p1y, p1dir, size2, grid):
-        if random.uniform(0, 1) < 0.1:
-            return random.choice(["w", "e", "n", "s"])
+    def returnState(self, p1x, p1y, p1dir, size, grid):
+        ring = [0 for i in range(8)]
+        counter = 0
+        ringOpp = 8
+        for k in range(-1, 2):
+            for j in range(-1, 2):
+                if k != 0 or j != 0:
+                    if int(self.x / 20) + k == p1x/20 and int(self.y / 20) + j == p1y/20:
+                        ringOpp = counter
+
+                    if int(self.x / 20) + k < 0 or int(self.x / 20) + k >= size or \
+                            int(self.y / 20) + j < 0 or int(self.y / 20) + j >= size:
+                        ring[counter] = 1
+                    elif grid[int(self.x / 20) + k][int(self.y / 20) + j]:
+                        ring[counter] = 1
+                    else:
+                        ring[counter] = 0
+                    counter = counter + 1
+
+        return (ring[0], ring[1], ring[2], ring[3], ring[4], ring[5], ring[6], ring[7], p1dir, ringOpp)
+
+    def epsilonGreedy(self, p1x, p1y, p1dir, size, grid, policy, iter):
+        if iter == 0 or random.uniform(0, 1) < 1/iter:
+            state = self.returnState(p1x, p1y, p1dir, size, grid)
+            return state, random.choice(["w", "e", "n", "s"])
         else:
-            ring = [0 for i in range(8)]
+            '''ring = [0 for i in range(8)]
             counter = 0
             ringOpp = 8
             for k in range(-1, 2):
@@ -47,15 +69,17 @@ class Agent:
                         if int(self.x / 20) + k == p1x and int(self.y / 20) + j == p1y:
                             ringOpp = counter
 
-                        if int(self.x / 20) + k < 0 or int(self.x / 20) + k >= size2 or \
-                                int(self.y / 20) + j < 0 or int(self.x / 20) + j >= 0:
+                        if int(self.x / 20) + k < 0 or int(self.x / 20) + k >= size or \
+                                int(self.y / 20) + j < 0 or int(self.y / 20) + j >= size:
                             ring[counter] = 1
                         elif grid[int(self.x / 20) + k][int(self.y / 20) + j]:
                             ring[counter] = 1
                         else:
                             ring[counter] = 0
+                        counter = counter + 1'''
 
-            return self.policy[(ring[0], ring[1], ring[2], ring[3], ring[4], ring[5], ring[6], ring[7], p1dir, ringOpp)]
+            state = self.returnState(p1x, p1y, p1dir, size, grid)
+            return state, policy[state]
 
 
 
@@ -88,9 +112,20 @@ class Agent:
         else:
             return False
 
-    def update_q(self):
-        self._update_policy()
-        pass
+    '''def update_q(self, state, action, reward, newState):
+        self.Q[state][action] = self.Q[state][action] + 0.5 * (reward + 0.5 * self.valueOfBestAction(newState)) - self.Q[state][action]
+        self._update_policy(state)'''
 
-    def _update_policy(self):
-        pass
+    def valueOfBestAction(self, state, Q):
+        best_Q = -float("inf")
+        for action in Q[state]:
+            best_Q = max(best_Q, Q[state][action])
+        return best_Q
+
+    def updatePolicy(self, state, Q):
+        best_Q = -float("inf")
+        for action in Q[state]:
+            if best_Q < Q[state][action]:
+                best_Q = Q[state][action]
+                bestAction = action
+        return bestAction
