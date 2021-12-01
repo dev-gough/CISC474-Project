@@ -7,16 +7,16 @@ Written By: Devon Gough
 import random as r
 import time as t
 import sys
-
 import pygame
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 
 from agent import Agent
 
 # Initialize pygame
 pygame.init()
-TICKRATE = 4
+TICKRATE = 512
 
 # Colours
 
@@ -36,9 +36,6 @@ MOVEMENTSPEED = 20
 screen = pygame.display.set_mode([SIZE2,SIZE2])
 pygame.display.set_caption("Tron: CISC 474")
 
-# Policy stuff?
-# TODO: Work with Alex to decide how to implement the Policy Class
-
 policy = {}
 Q = {}
 for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b in range(2) for c in range(2)
@@ -50,7 +47,13 @@ for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b i
         Q[state][action] = 0
 
 
-def run_loop(iters: int):
+def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
+
+    # Metrics to track
+    stats = []
+    p1_wins = 0
+    p2_wins = 0
+
     for itr in range(iters):
 
         # Sets initial map.
@@ -78,56 +81,79 @@ def run_loop(iters: int):
         # Main game loop.
         while not done:
 
-            # Event handling
-            for event in pygame.event.get():
+            if accept_inputs:
+            # Event handling if accepting inputs from keyboard
+                for event in pygame.event.get():
 
-                # If the user wants to quit the game.
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                    # If the user wants to quit the game.
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
 
-                # p1 movement
-                if event.type == pygame.KEYDOWN:
+                    # p1 movement
+                    if event.type == pygame.KEYDOWN:
 
-                    e = event.key
+                        e = event.key
 
-                    if e == pygame.K_a:
-                        p1.dir = 'w'
-                    elif e == pygame.K_d:
-                        p1.dir = 'e'
-                    elif e == pygame.K_w:
-                        p1.dir = 'n'
-                    elif e == pygame.K_s:
-                        p1.dir = 's'
-                    elif e == pygame.K_SPACE:
-                        # Reset the game
-                        # TODO: See if you can make this into a function (to also call at the start)
-                        
-                        screen.fill(BLACK)
-                        for i in range(0,SIZE2,20):
-                            pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
-                            pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
+                        if e == pygame.K_a:
+                            p1.dir = 'w'
+                        elif e == pygame.K_d:
+                            p1.dir = 'e'
+                        elif e == pygame.K_w:
+                            p1.dir = 'n'
+                        elif e == pygame.K_s:
+                            p1.dir = 's'
+                        elif e == pygame.K_SPACE:
+                            # Reset the game
+                            # TODO: See if you can make this into a function (to also call at the start)
 
-                        p1 = Agent(20, SIZE2/2, 'e', BLUE)
-                        p2 = Agent(SIZE2 - 20, SIZE2/2, 'w', YELLOW)
-                        grid = [[False for _ in range(int(SIZE2/20))] for _ in range(int(SIZE2/20))]
+                            screen.fill(BLACK)
+                            for i in range(0,SIZE2,20):
+                                pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
+                                pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
 
-                        pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                        pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                        grid[int(p1.x / 20)][int(p1.y / 20)] = True
-                        grid[int(p2.x / 20)][int(p2.y / 20)] = True
+                            p1 = Agent(20, SIZE2/2, 'e', BLUE)
+                            p2 = Agent(SIZE2 - 20, SIZE2/2, 'w', YELLOW)
+                            grid = [[False for _ in range(int(SIZE2/20))] for _ in range(int(SIZE2/20))]
 
+                            pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                            pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                            grid[int(p1.x / 20)][int(p1.y / 20)] = True
+                            grid[int(p2.x / 20)][int(p2.y / 20)] = True
 
-            # TODO: Alex add your policy stuff here, I didn't copy it over because I'm not deleting main.py
-            # TODO: Copy over anything you need here and leave both files.
+            else:
+                moves = []
+                x_moves = ["w", "e"]
+                y_moves = ["n", "s"]
+
+                #don't go backwards
+                if p1.dir in x_moves:
+                    moves = [p1.dir] + y_moves
+                if p1.dir in y_moves:
+                    moves = x_moves + [p1.dir]
+
+                #remove moves that result in hitting boundaries
+                if smarter_p1:
+                    if p1.x + 20 >= SIZE2 and "w" in moves:
+                        moves.remove("w")
+                    if p1.x -20 < 0 and "e" in moves:
+                        moves.remove("e")
+                    if p1.y + 20 >= SIZE2 and "s" in moves:
+                        moves.remove("s")
+                    if p1.y -20 < 0 and "n" in moves:
+                        moves.remove("n")
+
+                if len(moves) > 0:
+                    # Choose randomly from subset of moves
+                    p1.dir = random.choice(moves)
+                # Catch for no available moves
+                else:
+                    p1.dir = random.choice(["w", "e", "n", "s"])
+
+                print("p1 move choices:" + str(moves))
+
             state, direction = p2.epsilonGreedy(p1.x, p1.y, p1.dir, SIZE3, grid, policy, itr)
             p2.dir = direction
-            '''
-            TODO - List
-            
-            Update Q value of current state and action and then immediately afterwards update policy of state
-            Rewards
-            '''
 
             # Redraws the players based on their movement
             if p1.alive or p2.alive:
@@ -154,28 +180,26 @@ def run_loop(iters: int):
                 pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                 pygame.display.flip()
                 p1.score = p1.score + 1
-                #print(p1.score)
-                #print(p2.score)
                 reward = -5
-                #print("Reward " + str(reward))
-                #t.sleep(5.5)
                 done = True
+
+                p1_wins = p1_wins + 1
+                stats.append([itr, p1_wins, p2_wins])
             
             if p2.alive and not p1.alive:
                 pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                 #pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                 pygame.display.flip()
                 p2.score = p2.score + 1
-                #print(p1.score)
-                #print(p2.score)
                 reward = 1
-                #print("Reward: " + str(reward))
-                #t.sleep(5.5)
                 done = True
+                p2_wins = p2_wins + 1
+                stats.append([itr, p1_wins, p2_wins])
 
             if not p1.alive and not p2.alive:
                 reward = -5
                 done = True
+                stats.append([itr, p1_wins, p2_wins])
 
             newState = p2.returnState(p1.x, p1.y, p1.dir, SIZE3, grid)
             Q[state][p2.dir] = Q[state][p2.dir] + 0.5 * (reward + 0.5 * p2.valueOfBestAction(newState, Q) - Q[state][p2.dir])
@@ -188,8 +212,38 @@ def run_loop(iters: int):
             policy[state] = p2.updatePolicy(state, Q)
 
             clock.tick(TICKRATE)
-    pygame.quit()
-    sys.exit()
+
+    #pygame.quit()
+    return stats
+    #sys.exit()
+
+
+def plot(stats, p1_label, p2_label):
+    x = []
+    p1_y = []
+    p2_y = []
+    for entry in stats:
+        #Time step
+        x.append(entry[0])
+        p1_y.append(entry[1])
+        p2_y.append(entry[2])
+
+    print(x)
+    print(p1_y)
+    print(p2_y)
+
+    plt.plot(x, p1_y, label = p1_label)
+    plt.plot(x, p2_y, label= p2_label)
+    plt.legend()
+    plt.ylabel('wins')
+    plt.xlabel('number of games')
+    plt.show()
+
+
 
 if __name__ == '__main__':
-    run_loop(500)
+   run_stats = run_loop(500, False, True)
+   plot(run_stats, "p1 wins OOB avoidance", "p2 wins")
+   run_stats_dumb = run_loop(500, False, True)
+   plot(run_stats_dumb, "p1 wins basic", "p2 wins")
+   pygame.quit()
