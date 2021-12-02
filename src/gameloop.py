@@ -11,6 +11,7 @@ import pygame
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import pickle
 
 from agent import Agent
 
@@ -33,8 +34,7 @@ SIZE2 = 240
 SIZE3 = 12
 MOVEMENTSPEED = 20
 
-screen = pygame.display.set_mode([SIZE2,SIZE2])
-pygame.display.set_caption("Tron: CISC 474")
+
 
 policy = {}
 Q = {}
@@ -47,22 +47,27 @@ for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b i
         Q[state][action] = 0
 
 
-def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
+def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, draw_screen: bool = False, verbose: bool = False):
 
     # Metrics to track
     stats = []
     p1_wins = 0
     p2_wins = 0
 
+    if draw_screen:
+        screen = pygame.display.set_mode([SIZE2,SIZE2])
+        pygame.display.set_caption("Tron: CISC 474")
+
     for itr in range(iters):
 
+        if draw_screen:
         # Sets initial map.
-        screen.fill(BLACK)
+            screen.fill(BLACK)
 
-        for i in range(0, SIZE2, 20):
-            pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
-            pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
-        pygame.display.flip()
+            for i in range(0, SIZE2, 20):
+                pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
+                pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
+            pygame.display.flip()
 
         # Initiates player1
         p1 = Agent(20, SIZE2/2, 'e', BLUE)
@@ -104,20 +109,23 @@ def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
                         elif e == pygame.K_s:
                             p1.dir = 's'
                         elif e == pygame.K_SPACE:
-                            # Reset the game
-                            # TODO: See if you can make this into a function (to also call at the start)
+                            
+                            if draw_screen:
+                                # Reset the game
+                                # TODO: See if you can make this into a function (to also call at the start)
 
-                            screen.fill(BLACK)
-                            for i in range(0,SIZE2,20):
-                                pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
-                                pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
+                                screen.fill(BLACK)
+                                for i in range(0,SIZE2,20):
+                                    pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
+                                    pygame.draw.line(screen, WHITE, [0,i], [SIZE2,i])
 
                             p1 = Agent(20, SIZE2/2, 'e', BLUE)
                             p2 = Agent(SIZE2 - 20, SIZE2/2, 'w', YELLOW)
                             grid = [[False for _ in range(int(SIZE2/20))] for _ in range(int(SIZE2/20))]
 
-                            pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                            pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                            if draw_screen:
+                                pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                                pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                             grid[int(p1.x / 20)][int(p1.y / 20)] = True
                             grid[int(p2.x / 20)][int(p2.y / 20)] = True
 
@@ -150,13 +158,14 @@ def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
                 else:
                     p1.dir = random.choice(["w", "e", "n", "s"])
 
-                print("p1 move choices:" + str(moves))
+                if verbose:
+                    print("p1 move choices:" + str(moves))
 
             state, direction = p2.epsilonGreedy(p1.x, p1.y, p1.dir, SIZE3, grid, policy, itr)
             p2.dir = direction
 
             # Redraws the players based on their movement
-            if p1.alive or p2.alive:
+            if (p1.alive or p2.alive) and draw_screen:
                 pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                 pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                 pygame.display.flip()
@@ -176,9 +185,10 @@ def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
                 reward = 1
 
             if p1.alive and not p2.alive:
-                pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                pygame.display.flip()
+                if draw_screen:
+                    pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                    pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                    pygame.display.flip()
                 p1.score = p1.score + 1
                 reward = -5
                 done = True
@@ -187,9 +197,10 @@ def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
                 stats.append([itr, p1_wins, p2_wins])
             
             if p2.alive and not p1.alive:
-                pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                #pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                pygame.display.flip()
+                if draw_screen:
+                    pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                    #pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
+                    pygame.display.flip()
                 p2.score = p2.score + 1
                 reward = 1
                 done = True
@@ -203,18 +214,20 @@ def run_loop(iters: int, accept_inputs: bool, smarter_p1: bool):
 
             newState = p2.returnState(p1.x, p1.y, p1.dir, SIZE3, grid)
             Q[state][p2.dir] = Q[state][p2.dir] + 0.5 * (reward + 0.5 * p2.valueOfBestAction(newState, Q) - Q[state][p2.dir])
-            print("State: " + str(state))
-            print("NewState: " + str(newState))
-            print("Action: " + str(p2.dir))
-            print("Reward: " + str(reward))
-            print(Q[state])
-            print("Q: " + str(Q[state][p2.dir]))
+            
+            if verbose:
+                print("State: " + str(state))
+                print("NewState: " + str(newState))
+                print("Action: " + str(p2.dir))
+                print("Reward: " + str(reward))
+                print(Q[state])
+                print("Q: " + str(Q[state][p2.dir]))
+            
             policy[state] = p2.updatePolicy(state, Q)
-
             clock.tick(TICKRATE)
 
     #pygame.quit()
-    return stats
+    return stats, Q
     #sys.exit()
 
 
@@ -228,10 +241,6 @@ def plot(stats, p1_label, p2_label):
         p1_y.append(entry[1])
         p2_y.append(entry[2])
 
-    print(x)
-    print(p1_y)
-    print(p2_y)
-
     plt.plot(x, p1_y, label = p1_label)
     plt.plot(x, p2_y, label= p2_label)
     plt.legend()
@@ -242,8 +251,23 @@ def plot(stats, p1_label, p2_label):
 
 
 if __name__ == '__main__':
-   run_stats = run_loop(500, False, True)
-   plot(run_stats, "p1 wins OOB avoidance", "p2 wins")
-   run_stats_dumb = run_loop(500, False, True)
-   plot(run_stats_dumb, "p1 wins basic", "p2 wins")
-   pygame.quit()
+    start_time = t.time()
+    stats, Q = run_loop(100)
+    end_time = t.time()
+    #print(stats)
+    print("Time elapsed: {t:.5}s".format(t=end_time - start_time))  # 50k takes about 10 min
+
+    print(len(Q))
+
+    # Plotting
+    #plot(stats, "p1 wins OOB avoidance", "p2 wins")
+
+    # Write past data into csv
+    np.savetxt("saves\\stats.csv", stats, fmt='%i', delimiter=',')
+    np.save("saves\\policy.npy", Q)
+
+
+    j = np.load("saves\\policy.npy", allow_pickle='TRUE').item()
+
+    print(len(j))
+    pygame.quit()
