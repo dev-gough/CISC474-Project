@@ -27,10 +27,6 @@ With `verbose=True and draw_screen=True`: 55.3
 
 With `verbose=False and draw_screen=False`: 554s
 
-Just returning final results: 
+`num_iters=100000`:
 
-With `verbose=True and draw_screen=False`: 59.9
-
-With `verbose=False and draw_screen=True`: 50.9s
-
-With `verbose=True and draw_screen=True`: 55.3
+With `verbose=False and draw_screen=False`: 1190s
