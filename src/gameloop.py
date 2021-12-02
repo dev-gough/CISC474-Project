@@ -252,7 +252,7 @@ def plot(stats, p1_label, p2_label):
 
 if __name__ == '__main__':
     start_time = t.time()
-    stats, Q = run_loop(100)
+    stats, Q = run_loop(50000)
     end_time = t.time()
     #print(stats)
     print("Time elapsed: {t:.5}s".format(t=end_time - start_time))  # 50k takes about 10 min
