@@ -1,40 +1,54 @@
 """
 Agent class for CISC 474 final project
-Written By: Devon Gough
+Written By: Alex Darcovich, Devon Gough, and Jack Taylor
 """
 import random
 
 class Agent:
 
-    def __init__(self, x, y, dir, colour, pol={}) -> None:
+    """
+    The agent class contains all methods and attributes necessary to
+    enable reinforcement learning.
+    """
+
+    def __init__(self, x, y, dir, colour) -> None:
+        """
+        Initialize an Agent object.
+
+        Args:
+            x (int): The x coordinate of the agent.
+            y (int): The y coordinate of the agent.
+            dir (str) : The direction the agent is facing. ['n','e','s','w'] supported.
+            colour (tuple): The RGB values for the colour trail of the agent. (int,int,int)
+        """
+
         self.x = x
         self.y = y
         self.dir = dir
         self.score = 0
         self.alive = True
         self.colour = colour
-        #self.policy = self.initializePolicy()
-        #self.Q = self.initializeStateAction()
 
-    '''def initializePolicy(self):
-        policy = {}
-        for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b in range(2) for c in range(2)
-                      for d in range(2) for e in range(2) for f in range(2) for g in range(2) for h in range(2)
-                      for direction in ["w", "e", "n", "s"] for opp in range(9)]:
-            policy[state] = random.choice(["w", "e", "n", "s"])
-        return policy'''
+    def return_state(self, p1x, p1y, p1dir, size, grid):
+        """
+        Return the next state (s') after the agent has moved.
+        Player 2 is `self` here.
 
-    '''def initializeStateAction(self):
-        Q = {}
-        for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b in range(2) for c in range(2)
-                      for d in range(2) for e in range(2) for f in range(2) for g in range(2) for h in range(2)
-                      for direction in ["w", "e", "n", "s"] for opp in range(9)]:
-            Q[state] = {}
-            for action in ["w", "e", "n", "s"]:
-                Q[state][action] = 0
-        return Q'''
+        Args:
+            p1x (int): The x coordinate of the player 1.
+            p1y (int): The y coordinate of the player 1.
+            p1dir (int): The direction player 1 is moving.
+            size (int): The size of the board.
+            grid (list[list]): A 2d list of boolean values, 
+                indicating if an agent has been to a square on the grid before.
 
-    def returnState(self, p1x, p1y, p1dir, size, grid):
+        Returns:
+            A 10-tuple where the first 8 elements are the vision grid, 
+            either 0 if the grid location is neither a boundry nor has been visited, and 1 otherwise.  
+            The 9th is the current  direction of the opponent.
+            The 10th determines whether the opponent's head is in the vision grid, and if so, returns the index of where it is, else returning 8.
+        """
+
         ring = [0 for i in range(8)]
         counter = 0
         ringOpp = 8
@@ -55,39 +69,39 @@ class Agent:
 
         return (ring[0], ring[1], ring[2], ring[3], ring[4], ring[5], ring[6], ring[7], p1dir, ringOpp)
 
-    def epsilonGreedy(self, p1x, p1y, p1dir, size, grid, policy, iter):
+    def epsilon_greedy(self, p1x, p1y, p1dir, size, grid, policy, iter):
+        """
+        Generate an e-greedy decision for the agent.
+
+        Args:
+            p1x (int): The x coordinate of player 1.
+            p1y (int): The y coordinate of player 1.
+            p1dir (int): The direction player 1 is moving.
+            size (int): The size of the board.
+            grid (list[list]): A 2d list of boolean values, 
+                indicating if an agent has been to a square on the grid before.
+            policy (dict{dict}): A nested dictionary of state-action pairs.
+            iter (int): The current iteration.
+        
+        Returns:
+            The state-action pair in a tuple.
+
+        """
         if iter == 0 or random.uniform(0, 1) < 1/iter:
-            state = self.returnState(p1x, p1y, p1dir, size, grid)
+            state = self.return_state(p1x, p1y, p1dir, size, grid)
             return state, random.choice(["w", "e", "n", "s"])
         else:
-            '''ring = [0 for i in range(8)]
-            counter = 0
-            ringOpp = 8
-            for k in range(-1, 2):
-                for j in range(-1, 2):
-                    if k != 0 or j != 0:
-                        if int(self.x / 20) + k == p1x and int(self.y / 20) + j == p1y:
-                            ringOpp = counter
-
-                        if int(self.x / 20) + k < 0 or int(self.x / 20) + k >= size or \
-                                int(self.y / 20) + j < 0 or int(self.y / 20) + j >= size:
-                            ring[counter] = 1
-                        elif grid[int(self.x / 20) + k][int(self.y / 20) + j]:
-                            ring[counter] = 1
-                        else:
-                            ring[counter] = 0
-                        counter = counter + 1'''
-
-            state = self.returnState(p1x, p1y, p1dir, size, grid)
+            state = self.return_state(p1x, p1y, p1dir, size, grid)
             return state, policy[state]
 
-
+    
 
     def __repr__(self) -> str:
         return 'x: {x}, y: {y}, dir: {dir}, score: {s}, alive: {a}, colour: {c}'.format(
             x=self.x,y=self.y,dir=self.dir,s=self.score,a=self.alive,c=self.colour)
 
     def move(self, dist:int) -> None:
+        """Move the agent repending on its direction and distance provided."""
         if self.dir == 'n':
             self.y -= dist
         elif self.dir == 'e':
@@ -98,6 +112,7 @@ class Agent:
             self.x -= dist
     
     def check_oob(self, size: int):
+        """Check to see if the agent is going to go out of bounds."""
         if self.x >= size or self.x < 0 or self.y >= size or self.y < 0:
             self.alive = False
             self.colour = (255, 0, 0)
@@ -105,6 +120,7 @@ class Agent:
         return False
 
     def check_collide(self, grid: list) -> bool:
+        """Check to see if the agent is going to collide with a trail/head."""
         if grid[int(self.x/20)][int(self.y/20)]:
             self.alive = False
             self.colour = (255, 0, 0)
@@ -112,17 +128,15 @@ class Agent:
         else:
             return False
 
-    '''def update_q(self, state, action, reward, newState):
-        self.Q[state][action] = self.Q[state][action] + 0.5 * (reward + 0.5 * self.valueOfBestAction(newState)) - self.Q[state][action]
-        self._update_policy(state)'''
-
-    def valueOfBestAction(self, state, Q):
+    def value_of_best_action(self, state, Q):
+        """Return the maximum Q value of any action given a state."""
         best_Q = -float("inf")
         for action in Q[state]:
             best_Q = max(best_Q, Q[state][action])
         return best_Q
 
-    def updatePolicy(self, state, Q):
+    def update_policy(self, state, Q):
+        """Return the best action corresponding to the Q value of a state."""
         best_Q = -float("inf")
         for action in Q[state]:
             if best_Q < Q[state][action]:

@@ -1,8 +1,13 @@
 """
 Gameloop class for CISC 474 final project
-Written By: Devon Gough
-"""
+Written By: Alex Darcovich, Devon Gough, and Jack Taylor
 
+Player 1 in this file refers to the agent that we are only using
+to train our reinforcement learning agent.  Player 1 does not recieve
+updates that alter it's behaviour, as it does not have a Q table.
+
+Player 2 is the agent that we are conducting learning on.
+"""
 
 import random as r
 import time as t
@@ -12,6 +17,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import pickle
+
+from pygame.constants import NUMEVENTS
 
 from agent import Agent
 
@@ -35,19 +42,39 @@ SIZE3 = 12
 MOVEMENTSPEED = 20
 
 
-
+# Initialize the Q table
 policy = {}
 Q = {}
-for state in [(a, b, c, d, e, f, g, h, direction, opp) for a in range(2) for b in range(2) for c in range(2)
-                      for d in range(2) for e in range(2) for f in range(2) for g in range(2) for h in range(2)
-                      for direction in ["w", "e", "n", "s"] for opp in range(9)]:
+for state in [(a, b, c, d, e, f, g, h, direction, opp) 
+    for a in range(2) for b in range(2) 
+    for c in range(2) for d in range(2) 
+    for e in range(2) for f in range(2) 
+    for g in range(2) for h in range(2)
+    for direction in ["w", "e", "n", "s"] for opp in range(9)]:
+
     Q[state] = {}
     policy[state] = random.choice(["w", "e", "n", "s"])
     for action in ["w", "e", "n", "s"]:
         Q[state][action] = 0
 
 
-def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, draw_screen: bool = False, verbose: bool = False):
+def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, draw_screen: bool = False, verbose: bool = False) -> tuple:
+    """
+    Run a game loop.
+
+    Args:
+        iters (int): The number of iterations to run.
+        accept_inputs (bool): If the game will accept inputs from the player.
+        smarter_p1 (bool): If player 1 (not the one we are applying Q-learning to)
+            will use out-of-bounds avoidance.
+        draw_screen (bool): Draw the screen using pygame. (not required)
+        verbose (bool): Print various output for debugging.
+
+    Returns:
+        stats (list[list]): A 2d list of iteration stats of the form  [[iter, p1_wins, p2_wins],...]
+        Q (dict{dict}): The final Q table representing the state-action pairs and their Q-values after training.
+    
+    """
 
     # Metrics to track
     stats = []
@@ -112,8 +139,7 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                             
                             if draw_screen:
                                 # Reset the game
-                                # TODO: See if you can make this into a function (to also call at the start)
-
+                                
                                 screen.fill(BLACK)
                                 for i in range(0,SIZE2,20):
                                     pygame.draw.line(screen, WHITE, [i,0], [i,SIZE2])
@@ -134,13 +160,13 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                 x_moves = ["w", "e"]
                 y_moves = ["n", "s"]
 
-                #don't go backwards
+                # Don't go backwards
                 if p1.dir in x_moves:
                     moves = [p1.dir] + y_moves
                 if p1.dir in y_moves:
                     moves = x_moves + [p1.dir]
 
-                #remove moves that result in hitting boundaries
+                # Remove moves that result in hitting boundaries
                 if smarter_p1:
                     if p1.x + 20 >= SIZE2 and "w" in moves:
                         moves.remove("w")
@@ -161,7 +187,7 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                 if verbose:
                     print("p1 move choices:" + str(moves))
 
-            state, direction = p2.epsilonGreedy(p1.x, p1.y, p1.dir, SIZE3, grid, policy, itr)
+            state, direction = p2.epsilon_greedy(p1.x, p1.y, p1.dir, SIZE3, grid, policy, itr)
             p2.dir = direction
 
             # Redraws the players based on their movement
@@ -212,8 +238,8 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                 done = True
                 stats.append([itr, p1_wins, p2_wins])
 
-            newState = p2.returnState(p1.x, p1.y, p1.dir, SIZE3, grid)
-            Q[state][p2.dir] = Q[state][p2.dir] + 0.5 * (reward + 0.5 * p2.valueOfBestAction(newState, Q) - Q[state][p2.dir])
+            newState = p2.return_state(p1.x, p1.y, p1.dir, SIZE3, grid)
+            Q[state][p2.dir] = Q[state][p2.dir] + 0.5 * (reward + 0.5 * p2.value_of_best_action(newState, Q) - Q[state][p2.dir])
             
             if verbose:
                 print("State: " + str(state))
@@ -223,15 +249,21 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                 print(Q[state])
                 print("Q: " + str(Q[state][p2.dir]))
             
-            policy[state] = p2.updatePolicy(state, Q)
+            policy[state] = p2.update_policy(state, Q)
             clock.tick(TICKRATE)
 
-    #pygame.quit()
     return stats, Q
-    #sys.exit()
 
 
-def plot(stats, p1_label, p2_label):
+def plot(stats: list, p1_label: str, p2_label: str) -> None:
+    """
+    Plot the stats list that returns from a successful training of an agent.
+
+    Args:
+        stats (list[list]): A 2d list of iteration stats.
+        p1_label (str): The label for p1's portion of the graph
+        p2_label (str): The label for p2's portion of the graph
+    """
     x = []
     p1_y = []
     p2_y = []
@@ -249,22 +281,45 @@ def plot(stats, p1_label, p2_label):
     plt.show()
 
 
+def save(file: str, data, policy: bool = False) -> None:
+    """Save a csv of the stats, or a numpy object of the policy."""
+    file = "saves\\" + file
+    if not policy:
+        np.savetxt(file, data, fmt='%i', delimiter=',')
+    else:
+        np.save(file, data)
+    
+
+def load(file: str) -> dict:
+    """Load a numpy object of a saved policy."""
+    file = "saves\\" + file
+    return np.load(file, allow_pickle='TRUE').item()
 
 if __name__ == '__main__':
-    start_time = t.time()
-    dumb_stats, dumb_Q = run_loop(50000, smarter_p1=False)
-    end_time = t.time()
-    #print(stats)
-    print("Time elapsed: {t:.5}s".format(t=end_time - start_time))  # 50k takes about 10 min
+    """Run a training task with smarter_p1 and without smarter_p1"""
+    NUM_ITERS = 50000
 
-    # Plotting
-    #plot(stats, "p1 wins OOB avoidance", "p2 wins")
+    start_time1 = t.time()
+    dumb_stats, dumb_Q = run_loop(NUM_ITERS, smarter_p1=False)
+    end_time1 = t.time()
 
-    # Write past data into csv
-    np.savetxt("saves\\dumb_stats.csv", dumb_stats, fmt='%i', delimiter=',')
-    np.save("saves\\dumb_policy.npy", dumb_Q)
+    print("Run with smarter_p1=False succeeded.")
+    print("Time elapsed: {t:.5}s".format(t=end_time1 - start_time1))
 
+    start_time2 = t.time()
+    smart_stats, smart_Q = run_loop(NUM_ITERS)
+    end_time2 = t.time()
 
-    j = np.load("saves\\policy.npy", allow_pickle='TRUE').item()
+    print("Run with smarter_p1=True succeeded.")
+    print("Time elapsed: {t:.5}s".format(t=end_time2 - start_time2))
+
+    # Write stats into csv
+    save('dumb_stats.csv', dumb_stats)
+    save('smart_stats.csv', smart_stats)
+
+    # Write policies to numpy object
+
+    save(dumb_Q, policy=True)
+    save(smart_Q, policy=True)
 
     pygame.quit()
