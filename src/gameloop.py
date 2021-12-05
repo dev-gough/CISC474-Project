@@ -252,22 +252,19 @@ def plot(stats, p1_label, p2_label):
 
 if __name__ == '__main__':
     start_time = t.time()
-    stats, Q = run_loop(50000)
+    dumb_stats, dumb_Q = run_loop(50000, smarter_p1=False)
     end_time = t.time()
     #print(stats)
     print("Time elapsed: {t:.5}s".format(t=end_time - start_time))  # 50k takes about 10 min
-
-    print(len(Q))
 
     # Plotting
     #plot(stats, "p1 wins OOB avoidance", "p2 wins")
 
     # Write past data into csv
-    np.savetxt("saves\\stats.csv", stats, fmt='%i', delimiter=',')
-    np.save("saves\\policy.npy", Q)
+    np.savetxt("saves\\dumb_stats.csv", dumb_stats, fmt='%i', delimiter=',')
+    np.save("saves\\dumb_policy.npy", dumb_Q)
 
 
     j = np.load("saves\\policy.npy", allow_pickle='TRUE').item()
 
-    print(len(j))
     pygame.quit()
