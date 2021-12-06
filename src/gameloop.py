@@ -17,7 +17,6 @@ pip install numpy
 pip install matplotlib
 """
 
-import random as r
 import time as t
 import sys
 import pygame
@@ -193,6 +192,7 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                 if verbose:
                     print("p1 move choices:" + str(moves))
 
+            # Current state and action are returned from the epsilon greedy method.
             state, direction = p2.epsilon_greedy(p1.x, p1.y, p1.dir, SIZE3, grid, policy, itr)
             p2.dir = direction
 
@@ -213,6 +213,8 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                     if not a.check_collide(grid):
                         grid[int(a.x / 20)][int(a.y / 20)] = True
 
+            # The following group of statements deal with rewards, changing the state, and updating the Q-table.
+            
             if p2.alive:
                 reward = 1
 
@@ -231,7 +233,6 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
             if p2.alive and not p1.alive:
                 if draw_screen:
                     pygame.draw.rect(screen, p1.colour, [p1.x + 1, p1.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
-                    #pygame.draw.rect(screen, p2.colour, [p2.x + 1, p2.y + 1, (SIZE2 / SIZE3) - 1, (SIZE2 / SIZE3) - 1])
                     pygame.display.flip()
                 p2.score = p2.score + 1
                 reward = 1
@@ -244,6 +245,7 @@ def run_loop(iters: int, accept_inputs: bool = False, smarter_p1: bool = True, d
                 done = True
                 stats.append([itr, p1_wins, p2_wins])
 
+            # Updating state and Q-table.
             newState = p2.return_state(p1.x, p1.y, p1.dir, SIZE3, grid)
             Q[state][p2.dir] = Q[state][p2.dir] + 0.5 * (reward + 0.5 * p2.value_of_best_action(newState, Q) - Q[state][p2.dir])
             
