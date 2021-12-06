@@ -7,6 +7,14 @@ to train our reinforcement learning agent.  Player 1 does not recieve
 updates that alter it's behaviour, as it does not have a Q table.
 
 Player 2 is the agent that we are conducting learning on.
+
+Can be run as a standard python module in the command line (from the main git directory)
+by running `python3 src/gameloop.py`.
+
+Required Modules:
+pip install pygame
+pip install numpy
+pip install matplotlib
 """
 
 import random as r
@@ -17,8 +25,6 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import pickle
-
-from pygame.constants import NUMEVENTS
 
 from agent import Agent
 
@@ -297,7 +303,7 @@ def load(file: str) -> dict:
 
 if __name__ == '__main__':
     """Run a training task with smarter_p1 and without smarter_p1"""
-    NUM_ITERS = 50000
+    NUM_ITERS = 5000
 
     start_time1 = t.time()
     dumb_stats, dumb_Q = run_loop(NUM_ITERS, smarter_p1=False)
@@ -319,7 +325,7 @@ if __name__ == '__main__':
 
     # Write policies to numpy object
 
-    save(dumb_Q, policy=True)
-    save(smart_Q, policy=True)
+    save('dumb_policy.npy',dumb_Q, policy=True)
+    save('smart_policy.npy',smart_Q, policy=True)
 
     pygame.quit()
